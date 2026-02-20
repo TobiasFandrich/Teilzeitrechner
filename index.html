@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teilzeit Optimierer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e1e4e8;padding:16px}
+h1{font-size:1.25rem;font-weight:700;color:#fff;margin-bottom:4px}
+.sub{font-size:.78rem;color:#8b949e;margin-bottom:10px;line-height:1.5}
+.sub b{color:#58a6ff}
+
+.section-label{font-size:.68rem;color:#484f58;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin:10px 0 4px;padding-top:6px;border-top:1px solid #1c2028}
+.section-label:first-child{border-top:none;margin-top:0}
+
+.ctrls{display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;align-items:flex-end}
+.cg{display:flex;flex-direction:column;gap:2px}
+.cg label{font-size:.7rem;color:#8b949e}
+.cg select,.cg input{background:#161b22;border:1px solid #30363d;color:#e1e4e8;padding:4px 6px;border-radius:5px;font-size:.76rem}
+.cg input{width:85px;text-align:right}
+.cg input:focus,.cg select:focus{outline:none;border-color:#58a6ff}
+.cg.hi input,.cg.hi select{border-color:#30485d;background:#111820}
+
+.sim-bar{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.sim-bar span{font-size:.73rem;color:#8b949e;margin-right:2px}
+.sim-btn{background:#161b22;border:1px solid #30363d;color:#8b949e;padding:4px 9px;border-radius:6px;font-size:.7rem;cursor:pointer;transition:all .15s;font-weight:600}
+.sim-btn:hover{border-color:#58a6ff;color:#58a6ff}
+.sim-btn.active{background:#1a3a5a;border-color:#58a6ff;color:#58a6ff}
+.sim-btn.active.warn{background:#3a2a1a;border-color:#d29922;color:#d29922}
+.sim-btn.active.danger{background:#3a1a1a;border-color:#da3633;color:#f85149}
+
+.legend{display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap;align-items:center;font-size:.7rem;color:#8b949e}
+.lsw{width:22px;height:11px;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:2px}
+
+.tw{overflow-x:auto;border-radius:8px;border:1px solid #30363d;max-height:68vh;overflow-y:auto}
+table{border-collapse:collapse;width:100%;min-width:1360px;font-size:.74rem}
+thead th{background:#161b22;color:#8b949e;font-weight:600;padding:6px 5px;text-align:right;border-bottom:2px solid #30363d;cursor:pointer;user-select:none;white-space:nowrap;position:sticky;top:0;z-index:2}
+thead th:hover{color:#58a6ff}
+thead th.act{color:#58a6ff}
+thead th .ar{font-size:.58rem;margin-left:2px}
+thead th:first-child{text-align:center;width:28px}
+thead th:nth-child(2){text-align:center;width:26px;cursor:default}
+thead th:nth-child(3){text-align:left}
+
+tbody td{padding:5px 5px;text-align:right;border-bottom:1px solid #1c2028;white-space:nowrap;transition:background .12s}
+tbody td:first-child{text-align:center;font-weight:700;color:#8b949e;font-size:.68rem}
+tbody td:nth-child(2){text-align:center;width:26px}
+tbody td:nth-child(3){text-align:left;font-weight:700;color:#fff}
+tbody tr:hover td{filter:brightness(1.3)}
+tbody tr.pinned{background:rgba(88,166,255,.06)}
+tbody tr.pinned td{border-bottom-color:#1a3a5a}
+.pin-sep td{padding:0;height:3px;background:linear-gradient(90deg,transparent,#30363d,transparent);border:none}
+.fav-cb{width:13px;height:13px;accent-color:#58a6ff;cursor:pointer}
+
+.tag{display:inline-block;padding:1px 4px;border-radius:3px;font-size:.6rem;font-weight:700;margin-left:3px;vertical-align:middle}
+.tag-kfb{background:#1a2a3a;color:#58a6ff}
+.tag-kg{background:#1a2a1a;color:#3fb950}
+.tag-top{background:#2d1f00;color:#f0c000}
+
+.note{margin-top:12px;padding:10px 14px;background:#161b22;border:1px solid #30363d;border-radius:8px;font-size:.76rem;line-height:1.5;color:#8b949e}
+.note b{color:#e1e4e8}
+.note .hl{color:#d29aff;font-weight:600}
+
+.cards{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px 12px;flex:1;min-width:200px}
+.card h3{font-size:.7rem;color:#8b949e;margin-bottom:2px}
+.card .v{color:#3fb950;font-weight:700}
+.card .vr{color:#f85149;font-weight:700}
+.card p{font-size:.78rem;line-height:1.4}
+
+.sim-info{margin-bottom:8px;padding:7px 12px;border-radius:6px;font-size:.76rem;font-weight:600;display:none}
+.sim-info.on{display:block}
+.sim-info.orange{background:#2a2210;border:1px solid #d29922;color:#d29922}
+.sim-info.red{background:#2a1010;border:1px solid #da3633;color:#f85149}
+
+.stkl-note{font-size:.68rem;color:#484f58;margin-bottom:8px;font-style:italic}
+</style>
+</head>
+<body>
+
+<h1>Teilzeit Optimierer</h1>
+<div style="margin-bottom:10px;padding:8px 12px;background:#2a2210;border:1px solid #d29922;border-radius:6px;font-size:.74rem;color:#d29922;line-height:1.5">
+<strong>Hinweis:</strong> Alle angezeigten Werte sind <strong>Näherungswerte</strong> und dienen ausschließlich der Orientierung. Es wird keinerlei Gewähr für die Richtigkeit, Vollständigkeit oder Aktualität der Berechnungen übernommen. Diese Anwendung stellt keine Steuer-, Rechts- oder Finanzberatung dar.
+</div>
+<div class="sub"><b>HH gesamt</b> = Haushaltsnetto (Splitting) + günstigeres von Kindergeld oder KFB-Vorteil · Spaltenköpfe klicken zum Sortieren</div>
+
+<div class="section-label">Einkommen & Familie</div>
+<div class="ctrls">
+<div class="cg hi"><label>Er Brutto/Jahr</label><input type="number" id="inMBr" value="60000" step="1000" min="0"></div>
+<div class="cg hi"><label>Er h/Wo (100%)</label><input type="number" id="inMH" value="40" step="0.5" min="1" max="50" style="width:60px"></div>
+<div class="cg hi"><label>Sie Brutto/Jahr</label><input type="number" id="inFBr" value="60000" step="1000" min="0"></div>
+<div class="cg hi"><label>Sie h/Wo (100%)</label><input type="number" id="inFH" value="40" step="0.5" min="1" max="50" style="width:60px"></div>
+<div class="cg hi"><label>Kinder</label><select id="inKids"><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
+<div class="cg hi"><label>Steuerklasse</label><select id="inStkl"><option value="4/4" selected>IV / IV</option><option value="3/5">III Er / V Sie</option><option value="5/3">V Er / III Sie</option></select></div>
+<div class="cg hi"><label>Fixkosten/Mon</label><input type="number" id="fixK" value="1425" step="50" min="0"></div>
+</div>
+<div class="stkl-note">Steuerklasse betrifft nur ALG I (Haushaltsnetto wird immer mit Splitting/Zusammenveranlagung berechnet). PV-Beitrag passt sich an Kinderzahl an.</div>
+
+<div class="section-label">Filter</div>
+<div class="ctrls">
+<div class="cg"><label>Min. HH gesamt</label><select id="fN"><option value="0">Alle</option><option value="3000">≥3.000€</option><option value="4000">≥4.000€</option><option value="5000" selected>≥5.000€</option><option value="6000">≥6.000€</option><option value="7000">≥7.000€</option></select></div>
+<div class="cg"><label>Max. h/Woche</label><select id="fH"><option value="999" selected>Alle</option><option value="50">≤50h</option><option value="55">≤55h</option><option value="60">≤60h</option><option value="65">≤65h</option><option value="70">≤70h</option><option value="80">≤80h</option></select></div>
+<div class="cg"><label>Tage-Modell</label><select id="fT"><option value="5" selected>5-Tage-Woche</option><option value="4">4-Tage-Woche</option></select></div>
+<div class="cg"><label>Er min</label><select id="fMmin"><option value="0">0%</option><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option><option value="90">90%</option><option value="100">100%</option></select></div>
+<div class="cg"><label>Er max</label><select id="fMmax"><option value="0">0%</option><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option><option value="90">90%</option><option value="100" selected>100%</option></select></div>
+<div class="cg"><label>Sie min</label><select id="fFmin"><option value="0" selected>0%</option><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option><option value="90">90%</option><option value="100">100%</option></select></div>
+<div class="cg"><label>Sie max</label><select id="fFmax"><option value="0">0%</option><option value="10">10%</option><option value="20">20%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="70">70%</option><option value="80">80%</option><option value="90">90%</option><option value="100" selected>100%</option></select></div>
+</div>
+
+<div class="section-label">Simulation</div>
+<div class="sim-bar">
+<button class="sim-btn active" data-sim="normal" onclick="setSim('normal')">✅ Normal</button>
+<button class="sim-btn" data-sim="m_alg" onclick="setSim('m_alg')">👨 Er ALG I</button>
+<button class="sim-btn" data-sim="f_alg" onclick="setSim('f_alg')">👩 Sie ALG I</button>
+<button class="sim-btn" data-sim="m_kg" onclick="setSim('m_kg')">👨 Er KrankenG</button>
+<button class="sim-btn" data-sim="f_kg" onclick="setSim('f_kg')">👩 Sie KrankenG</button>
+<button class="sim-btn" data-sim="beide_alg" onclick="setSim('beide_alg')">👫 Beide ALG I</button>
+<button class="sim-btn" data-sim="beide_kg" onclick="setSim('beide_kg')">👫 Beide KrankenG</button>
+</div>
+<div class="sim-info" id="simInfo"></div>
+
+<div class="legend">
+<span>Heatmap:</span>
+<span><span class="lsw" style="background:#1a5a2a"></span>Best</span>
+<span><span class="lsw" style="background:#1c2030"></span>Mittel</span>
+<span><span class="lsw" style="background:#5a1a1a"></span>Schlecht</span>
+<span style="margin-left:8px"><span class="tag tag-kfb">KFB</span> Kinderfreibetrag</span>
+<span><span class="tag tag-kg">KG</span> Kindergeld</span>
+<span style="margin-left:8px">★ Favoriten <a href="#" id="clrF" style="color:#f85149;font-size:.65rem;text-decoration:none" onclick="favs.clear();render();return false">[×]</a></span>
+</div>
+
+<div class="tw"><table><thead><tr id="hdr"></tr></thead><tbody id="tbd"></tbody></table></div>
+<div class="cards" id="cards"></div>
+<div class="note" id="xferNote"></div>
+
+<script>
+const BBG_KV=69750,BBG_RV=101400,KV=.0875,RV=.093,AV=.013,WK=1230;
+
+function pvAN(nKids){
+  // PV AN-Anteil 2026 nach Kinderzahl (Kinder unter 25)
+  if(nKids===0) return .024;  // 1.8% + 0.6% Kinderlosenzuschlag
+  if(nKids===1) return .018;
+  if(nKids===2) return .0155;
+  if(nKids===3) return .013;
+  if(nKids===4) return .0105;
+  return .008; // 5+
+}
+
+function getP(){
+  let stkl=document.getElementById('inStkl').value;
+  let nk=+document.getElementById('inKids').value;
+  return{
+    MBR:+document.getElementById('inMBr').value||0,
+    FBR:+document.getElementById('inFBr').value||0,
+    MH:+document.getElementById('inMH').value||40,
+    FH:+document.getElementById('inFH').value||40,
+    nKids:nk,
+    mStkl:stkl==='3/5'?3:stkl==='5/3'?5:4,
+    fStkl:stkl==='3/5'?5:stkl==='5/3'?3:4,
+    pv:pvAN(nk),
+    kgPerChild:259,
+    kfbPerChild:9756,
+  };
+}
+
+function svT(b,pv){return Math.min(b,BBG_KV)*(KV+pv)+Math.min(b,BBG_RV)*(RV+AV)}
+function vor(b,pv){return Math.min(b,BBG_RV)*RV+Math.min(b,BBG_KV)*KV*.96+Math.min(b,BBG_KV)*pv}
+
+// ESt-Tarif 2026 (Steuerfortentwicklungsgesetz, §32a EStG)
+function estE(z){z=Math.max(Math.floor(z),0);if(z<=12348)return 0;if(z<=17799){let y=(z-12348)/1e4;return Math.floor((914.51*y+1400)*y)}if(z<=69878){let w=(z-17799)/1e4;return Math.floor((173.10*w+2397)*w+1034.87)}if(z<=277825)return Math.floor(.42*z-11135.63);return Math.floor(.45*z-19470.38)}
+
+// Netto individuell (Grundtarif, für KG-90%-Grenze)
+function nIV(b,pv){if(b<=0)return 0;let s=svT(b,pv),v=vor(b,pv),z=Math.max(b-WK-v,0);return(b-s-estE(z))/12}
+
+// ALG I mit Steuerklasse (SV-Pauschale 20% gem. §153 SGB III)
+function alg1(b,stkl,hasKids){
+  if(b<=0)return 0;
+  let bem=Math.min(b,BBG_RV),t=bem/365,sv=t*.20;
+  let zve=Math.max(bem*.80-WK,0);
+  let lst;
+  if(stkl===3) lst=2*estE(zve/2);
+  else if(stkl===5) lst=estE(zve+12348);
+  else lst=estE(zve);
+  return Math.max(t-sv-lst/365,0)*(hasKids?.67:.60)*30;
+}
+
+// Krankengeld (steuerklassenunabhängig, SV-Abzug kinderabhängig: RV+AV+PV)
+function kgeld(b,pv){
+  if(b<=0)return 0;
+  let rt=Math.min(b,BBG_KV)/365,k7=rt*.7;
+  let nt=nIV(b,pv)*12/365,k9=nt*.9;
+  return Math.min(k7,k9)*(1-(RV+AV+pv))*30;
+}
+
+function calc(mp,fp,P){
+  let mb=P.MBR*mp/100,fb=P.FBR*fp/100;
+  let mh=P.MH*mp/100,fh=P.FH*fp/100;
+  let msv=svT(mb,P.pv),fsv=svT(fb,P.pv);
+  let mv=vor(mb,P.pv),fv=vor(fb,P.pv);
+  let nwk=(mp>0?WK:0)+(fp>0?WK:0);
+  let zve=Math.max((mb-mv)+(fb-fv)-nwk,0);
+
+  // Günstigerprüfung
+  let kfbTotal=P.kfbPerChild*P.nKids;
+  let kgJahr=P.kgPerChild*P.nKids*12;
+  let estOhne=2*estE(zve/2);
+  let estMit=2*estE(Math.max(zve-kfbTotal,0)/2);
+  let kfbV=estOhne-estMit;
+  let useKFB=P.nKids>0&&kfbV>kgJahr;
+  let est=useKFB?estMit:estOhne;
+  let kgM=useKFB?0:P.kgPerChild*P.nKids;
+  let kfbM=useKFB?Math.round(kfbV/12):0;
+
+  let netto=Math.round((mb+fb-msv-fsv-est)/12);
+  let hhG=netto+kgM;
+  let hw=mh+fh;
+  let eh=hw>0?hhG/(hw*4.333):0;
+  let hasK=P.nKids>0;
+
+  return{mp,fp,mb,fb,netto,kgM,kfbM,hhG,hw,mh,fh,eh:Math.round(eh*100)/100,
+    m5:+(mh/5).toFixed(1),f5:+(fh/5).toFixed(1),m4:+(mh/4).toFixed(1),f4:+(fh/4).toFixed(1),
+    mnIV:mp>0?Math.round(nIV(mb,P.pv)):0,
+    fnIV:fp>0?Math.round(nIV(fb,P.pv)):0,
+    mAlg:Math.round(alg1(mb,P.mStkl,hasK)),
+    fAlg:Math.round(alg1(fb,P.fStkl,hasK)),
+    mKg:Math.round(kgeld(mb,P.pv)),
+    fKg:Math.round(kgeld(fb,P.pv)),
+    useKFB,method:useKFB?'KFB':'KG',bonus:useKFB?kfbM:kgM,
+    kgM_fallback:P.kgPerChild*P.nKids};
+}
+
+function buildData(){let P=getP(),D=[];for(let m=100;m>=0;m-=10)for(let f=100;f>=0;f-=10)D.push(calc(m,f,P));return D}
+
+let favs=new Set(),curSim='normal';
+
+function setSim(s){
+  curSim=s;
+  document.querySelectorAll('.sim-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.sim===s);
+    b.classList.remove('warn','danger');
+    if(b.dataset.sim===s&&s.includes('alg')&&s!=='normal')b.classList.add('warn');
+    if(b.dataset.sim===s&&(s.includes('kg')&&s!=='normal'||s.startsWith('beide')))b.classList.add('danger');
+  });
+  render();
+}
+
+function getSimHH(r){
+  let kg=r.kgM_fallback;
+  switch(curSim){
+    case 'normal':return r.hhG;
+    case 'm_alg':return r.mAlg+r.fnIV+kg;
+    case 'f_alg':return r.mnIV+r.fAlg+kg;
+    case 'm_kg':return r.mKg+r.fnIV+kg;
+    case 'f_kg':return r.mnIV+r.fKg+kg;
+    case 'beide_alg':return r.mAlg+r.fAlg+kg;
+    case 'beide_kg':return r.mKg+r.fKg+kg;
+    default:return r.hhG;
+  }
+}
+
+function getSimLabel(){
+  let P=getP(),sm=P.mStkl,sf=P.fStkl;
+  let svPct=((RV+AV+P.pv)*100).toFixed(1);
+  switch(curSim){
+    case 'normal':return null;
+    case 'm_alg':return{text:'\u26A0\uFE0F Er arbeitslos \u2192 ALG I ('+( P.nKids>0?'67':'60')+'%, Stkl '+(sm===3?'III':sm===5?'V':'IV')+').  Sie verdient weiter.',cls:'orange'};
+    case 'f_alg':return{text:'\u26A0\uFE0F Sie arbeitslos \u2192 ALG I ('+(P.nKids>0?'67':'60')+'%, Stkl '+(sf===3?'III':sf===5?'V':'IV')+').  Er verdient weiter.',cls:'orange'};
+    case 'm_kg':return{text:'\uD83C\uDFE5 Er langzeitkrank \u2192 Krankengeld (70% Brutto, max 90% Netto, \u2212'+svPct+'% SV). Sie verdient weiter.',cls:'red'};
+    case 'f_kg':return{text:'\uD83C\uDFE5 Sie langzeitkrank \u2192 Krankengeld (\u2212'+svPct+'% SV). Er verdient weiter.',cls:'red'};
+    case 'beide_alg':return{text:'\uD83D\uDEA8 BEIDE arbeitslos \u2192 Jeweils ALG I ('+(P.nKids>0?'67':'60')+'%).',cls:'red'};
+    case 'beide_kg':return{text:'\uD83D\uDEA8 BEIDE langzeitkrank \u2192 Jeweils Krankengeld (\u2212'+svPct+'% SV).',cls:'red'};
+  }
+}
+
+const cols=[
+  {k:'rank',l:'#',fmt:v=>v,sort:0,heat:0},
+  {k:'fav',l:'\u2605',fmt:v=>v,sort:0,heat:0},
+  {k:'split',l:'Split',fmt:v=>v,sort:1,heat:0,al:'left'},
+  {k:'netto',l:'Netto HH',fmt:v=>v.toLocaleString('de')+'\u20AC',sort:1,heat:1,hi:1},
+  {k:'bonus',l:'KG/KFB',fmt:(v,r)=>(r.useKFB?'+':'')+v+'\u20AC',sort:1,heat:0},
+  {k:'hhG',l:'HH gesamt',fmt:v=>v.toLocaleString('de')+'\u20AC',sort:1,heat:1,hi:1},
+  {k:'uebrig',l:'\u00DCbrig',fmt:v=>v.toLocaleString('de')+'\u20AC',sort:1,heat:1,hi:1},
+  {k:'hw',l:'h/Wo',fmt:v=>v.toFixed(1),sort:1,heat:1,hi:0},
+  {k:'eh',l:'\u20AC/h',fmt:v=>v.toFixed(2)+'\u20AC',sort:1,heat:1,hi:1},
+  {k:'mhd',l:'Er h/Tag',fmt:v=>v>0?v.toFixed(1)+'h':'\u2014',sort:1,heat:1,hi:0},
+  {k:'fhd',l:'Sie h/Tag',fmt:v=>v>0?v.toFixed(1)+'h':'\u2014',sort:1,heat:1,hi:0},
+  {k:'ma',l:'ALG I Er',fmt:v=>v>0?v.toLocaleString('de')+'\u20AC':'\u2014',sort:1,heat:1,hi:1},
+  {k:'fa',l:'ALG I Sie',fmt:v=>v>0?v.toLocaleString('de')+'\u20AC':'\u2014',sort:1,heat:1,hi:1},
+  {k:'mk',l:'KG Er',fmt:v=>v>0?v.toLocaleString('de')+'\u20AC':'\u2014',sort:1,heat:1,hi:1},
+  {k:'fk',l:'KG Sie',fmt:v=>v>0?v.toLocaleString('de')+'\u20AC':'\u2014',sort:1,heat:1,hi:1},
+];
+
+let sK='eh',sD=-1;
+
+function hc(val,mn,mx,hi){
+  if(mx===mn)return'transparent';let r=(val-mn)/(mx-mn);if(!hi)r=1-r;
+  let R,G,B;
+  if(r<.3){let t=r/.3;R=140-t*100|0;G=30+t*15|0;B=30+t*10|0}
+  else if(r<.6){let t=(r-.3)/.3;R=40-t*10|0;G=45+t*15|0;B=40+t*10|0}
+  else{let t=(r-.6)/.4;R=30-t*5|0;G=60+t*100|0;B=50-t*10|0}
+  return'rgba('+R+','+G+','+B+',.5)'
+}
+
+function mkEl(tag,cls,text){
+  let e=document.createElement(tag);
+  if(cls)e.className=cls;
+  if(text!==undefined)e.textContent=text;
+  return e;
+}
+
+function buildCard(title,bodyParts){
+  let card=mkEl('div','card');
+  card.appendChild(mkEl('h3',null,title));
+  let p=mkEl('p');
+  bodyParts.forEach(part=>{
+    if(typeof part==='string') p.appendChild(document.createTextNode(part));
+    else p.appendChild(part);
+  });
+  card.appendChild(p);
+  return card;
+}
+
+function render(){
+  let D=buildData();
+  let minN=+document.getElementById('fN').value,maxH=+document.getElementById('fH').value;
+  let tage=+document.getElementById('fT').value;
+  let minM=+document.getElementById('fMmin').value,maxM=+document.getElementById('fMmax').value;
+  let minF=+document.getElementById('fFmin').value,maxF=+document.getElementById('fFmax').value;
+  let fixK=+document.getElementById('fixK').value||0;
+  let isSim=curSim!=='normal';
+  let P=getP();
+
+  let rows=D.filter(r=>{
+    let key=r.mp+'/'+r.fp;
+    if(favs.has(key))return 1;
+    let hh=isSim?getSimHH(r):r.hhG;
+    if(hh<minN||r.hw>maxH)return 0;
+    if(r.mp<minM||r.mp>maxM||r.fp<minF||r.fp>maxF)return 0;
+    return 1;
+  }).map(r=>{
+    let simHH=isSim?Math.round(getSimHH(r)):r.hhG;
+    let key=r.mp+'/'+r.fp;
+    return{...r,split:'M'+r.mp+'/F'+r.fp,favKey:key,isPinned:favs.has(key),
+      mhd:tage===5?r.m5:r.m4,fhd:tage===5?(r.fp>0?r.f5:0):(r.fp>0?r.f4:0),
+      hhG:simHH,netto:isSim?simHH:r.netto,
+      bonus:isSim?r.kgM_fallback:r.bonus,useKFB:isSim?false:r.useKFB,
+      uebrig:simHH-fixK,eh:r.hw>0?simHH/(r.hw*4.333):0,
+      rank:0,ma:r.mAlg,fa:r.fAlg,mk:r.mKg,fk:r.fKg}
+  });
+
+  rows.sort((a,b)=>{if(a.isPinned!==b.isPinned)return a.isPinned?-1:1;let A=a[sK],B=b[sK];return typeof A==='string'?sD*A.localeCompare(B):sD*(A-B)});
+  rows.forEach((r,i)=>r.rank=i+1);
+
+  let rng={};
+  cols.forEach(c=>{if(!c.heat)return;let vs=rows.map(r=>r[c.k]).filter(v=>typeof v==='number');if(!vs.length)return;rng[c.k]={mn:Math.min(...vs),mx:Math.max(...vs),hi:c.hi}});
+
+  let byE=[...rows].sort((a,b)=>b.eh-a.eh);
+  let t1=byE[0]?.split,t2=byE[1]?.split,t3=byE[2]?.split;
+
+  let simEl=document.getElementById('simInfo');
+  let simL=getSimLabel();
+  if(simL){simEl.className='sim-info on '+simL.cls;simEl.textContent=simL.text}else simEl.className='sim-info';
+
+  let hdr=document.getElementById('hdr');
+  hdr.replaceChildren();
+  cols.forEach(c=>{
+    let th=document.createElement('th');
+    let label=c.l;
+    if(c.k==='hhG'&&isSim)label='HH Sim.';
+    if(c.k==='netto'&&isSim)label='Sim. Eink.';
+    if(c.k==='fav'){th.textContent='\u2605';th.style.textAlign='center';th.style.width='26px';th.style.cursor='default';hdr.appendChild(th);return}
+    th.textContent=label;
+    if(c.al)th.style.textAlign=c.al;
+    if(c.sort){
+      th.onclick=()=>{if(sK===c.k)sD*=-1;else{sK=c.k;sD=c.hi===0?1:-1}render()};
+      if(sK===c.k){
+        th.classList.add('act');
+        let ar=mkEl('span','ar',sD>0?'\u25B2':'\u25BC');
+        th.appendChild(ar);
+      }
+    }
+    hdr.appendChild(th);
+  });
+
+  let tb=document.getElementById('tbd');
+  tb.replaceChildren();
+  let lastP=false;
+  rows.forEach(r=>{
+    if(lastP&&!r.isPinned){let sep=document.createElement('tr');sep.className='pin-sep';let sc=document.createElement('td');sc.colSpan=cols.length;sep.appendChild(sc);tb.appendChild(sep)}
+    lastP=r.isPinned;
+    let tr=document.createElement('tr');if(r.isPinned)tr.classList.add('pinned');
+    cols.forEach(c=>{
+      let td=document.createElement('td'),v=r[c.k];
+      if(c.k==='fav'){let cb=document.createElement('input');cb.type='checkbox';cb.className='fav-cb';cb.checked=r.isPinned;cb.onchange=()=>{if(cb.checked)favs.add(r.favKey);else favs.delete(r.favKey);render()};td.appendChild(cb)}
+      else if(c.k==='split'){
+        td.appendChild(document.createTextNode(r.split+' '));
+        if(!isSim&&P.nKids>0){
+          let tag=mkEl('span',r.useKFB?'tag tag-kfb':'tag tag-kg',r.useKFB?'KFB':'KG');
+          td.appendChild(tag);
+        }
+        if(r.split===t1)td.appendChild(mkEl('span','tag tag-top','\u2B50#1'));
+        else if(r.split===t2)td.appendChild(mkEl('span','tag tag-top','\u2605#2'));
+        else if(r.split===t3)td.appendChild(mkEl('span','tag tag-top','\u2605#3'));
+      } else if(c.k==='bonus'&&!isSim){
+        td.textContent=c.fmt(v,r);td.style.color=r.useKFB?'#58a6ff':'#3fb950';td.style.fontWeight='600';
+      } else if(c.k==='uebrig'){
+        td.textContent=c.fmt(v,r);if(v<0){td.style.color='#f85149';td.style.fontWeight='700'}else if(v<500){td.style.color='#d29922';td.style.fontWeight='600'}
+      } else td.textContent=c.fmt(v,r);
+      if(c.heat&&rng[c.k]&&typeof v==='number')td.style.background=hc(v,rng[c.k].mn,rng[c.k].mx,rng[c.k].hi);
+      if(c.al)td.style.textAlign=c.al;
+      tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+
+  let cardsEl=document.getElementById('cards');
+  cardsEl.replaceChildren();
+  if(rows.length){
+    let best=byE[0],free=[...rows].sort((a,b)=>a.hw-b.hw)[0];
+    let rich=[...rows].sort((a,b)=>b.uebrig-a.uebrig)[0],poor=[...rows].sort((a,b)=>a.uebrig-b.uebrig)[0];
+    let st=isSim?' (Sim.)':'';
+
+    cardsEl.appendChild(buildCard('\u2B50 H\u00F6chste \u20AC/h'+st,[
+      mkEl('b',null,best.split),' \u2192 ',
+      mkEl('span','v',best.eh.toFixed(2)+'\u20AC/h'),
+      document.createElement('br'),
+      best.hhG.toLocaleString('de')+'\u20AC HH \u00B7 \u00DCbrig: ',
+      mkEl('b',null,best.uebrig.toLocaleString('de')+'\u20AC')
+    ]));
+    cardsEl.appendChild(buildCard('\uD83D\uDCB0 Meistes \u00DCbrig'+st,[
+      mkEl('b',null,rich.split),' \u2192 ',
+      mkEl('span','v',rich.uebrig.toLocaleString('de')+'\u20AC'),
+      document.createElement('br'),
+      rich.hhG.toLocaleString('de')+'\u20AC HH bei '+rich.hw.toFixed(1)+'h/Wo'
+    ]));
+    cardsEl.appendChild(buildCard((poor.uebrig<0?'\uD83D\uDEA8':'\u26A0\uFE0F')+' Wenigstes \u00DCbrig'+st,[
+      mkEl('b',null,poor.split),' \u2192 ',
+      mkEl('span',poor.uebrig<0?'vr':'v',poor.uebrig.toLocaleString('de')+'\u20AC'),
+      document.createElement('br'),
+      poor.hhG.toLocaleString('de')+'\u20AC HH'
+    ]));
+    cardsEl.appendChild(buildCard('\uD83D\uDD50 Wenigste Stunden',[
+      mkEl('b',null,free.split),' \u2192 ',
+      mkEl('span','v',free.hw.toFixed(1)+'h/Wo'),
+      document.createElement('br'),
+      '\u00DCbrig: '+free.uebrig.toLocaleString('de')+'\u20AC'
+    ]));
+  }
+
+  let noteEl=document.getElementById('xferNote');
+  noteEl.replaceChildren();
+  let sn=P.mStkl===3?'III/V':P.mStkl===5?'V/III':'IV/IV';
+  let pvPct=(P.pv*100).toFixed(1);
+  let svKgPct=((RV+AV+P.pv)*100).toFixed(1);
+
+  let line1=[mkEl('b',null,'Parameter: '),
+    P.nKids+' Kind'+(P.nKids!==1?'er':'')+' \u00B7 Stkl '+sn+' \u00B7 PV-AN '+pvPct+'% \u00B7 Fixkosten '+fixK.toLocaleString('de')+'\u20AC'];
+  if(fixK>0) line1.push(' \u00B7 ',mkEl('b',null,rows.filter(r=>r.uebrig<0).length+' Szenarien im Minus'));
+  line1.forEach(n=>{noteEl.appendChild(typeof n==='string'?document.createTextNode(n):n)});
+
+  noteEl.appendChild(document.createElement('br'));
+  noteEl.appendChild(document.createElement('br'));
+  noteEl.appendChild(mkEl('b',null,'Steuerklasse: '));
+  noteEl.appendChild(document.createTextNode('Haushaltsnetto wird immer per '));
+  noteEl.appendChild(mkEl('b',null,'Splitting'));
+  noteEl.appendChild(document.createTextNode(' (Zusammenveranlagung) berechnet \u2014 Stkl-Wahl \u00E4ndert das Netto nicht. Stkl betrifft nur '));
+  noteEl.appendChild(mkEl('b',null,'ALG I'));
+  noteEl.appendChild(document.createTextNode(': Stkl III \u2192 h\u00F6heres ALG I (Splittingtarif), Stkl V \u2192 niedrigeres ALG I (kein Grundfreibetrag).'));
+
+  noteEl.appendChild(document.createElement('br'));
+  noteEl.appendChild(document.createElement('br'));
+  noteEl.appendChild(mkEl('b',null,'PV-Beitrag: '));
+  if(P.nKids===0) noteEl.appendChild(document.createTextNode('Kinderlosenzuschlag +0,6% \u2192 PV-AN 2,4%'));
+  else if(P.nKids===1) noteEl.appendChild(document.createTextNode('1 Kind \u2192 PV-AN 1,8% (Standard)'));
+  else noteEl.appendChild(document.createTextNode(P.nKids+' Kinder \u2192 PV-AN '+pvPct+'% (Abschlag \u2212'+(0.25*(P.nKids-1)).toFixed(2)+'%)'));
+
+  noteEl.appendChild(document.createElement('br'));
+  noteEl.appendChild(document.createElement('br'));
+  if(P.nKids>0){
+    noteEl.appendChild(mkEl('b',null,'G\u00FCnstigerpr\u00FCfung: '));
+    let kfbTag=mkEl('span','tag tag-kfb','KFB');kfbTag.style.fontSize='.7rem';
+    noteEl.appendChild(kfbTag);
+    noteEl.appendChild(document.createTextNode(' '+P.nKids+'\u00D7 '+P.kfbPerChild.toLocaleString('de')+'\u20AC = '+(P.kfbPerChild*P.nKids).toLocaleString('de')+'\u20AC Freibetrag vs. '));
+    let kgTag=mkEl('span','tag tag-kg','KG');kgTag.style.fontSize='.7rem';
+    noteEl.appendChild(kgTag);
+    noteEl.appendChild(document.createTextNode(' '+P.nKids+'\u00D7 '+P.kgPerChild+'\u20AC = '+(P.kgPerChild*P.nKids)+'\u20AC/Mon'));
+    noteEl.appendChild(document.createElement('br'));
+    noteEl.appendChild(document.createElement('br'));
+    noteEl.appendChild(mkEl('b',null,'Krankengeld SV-Abzug: '));
+    noteEl.appendChild(document.createTextNode('RV '+((RV*100).toFixed(1))+'% + AV '+((AV*100).toFixed(1))+'% + PV '+pvPct+'% = '+svKgPct+'%'));
+  } else {
+    noteEl.appendChild(mkEl('b',null,'Keine Kinder: '));
+    noteEl.appendChild(document.createTextNode('Kein Kindergeld, kein Kinderfreibetrag. ALG I nur 60% statt 67%.'));
+  }
+}
+
+['fN','fH','fT','fMmin','fMmax','fFmin','fFmax','inStkl','inKids'].forEach(id=>document.getElementById(id).onchange=render);
+['fixK','inMBr','inMH','inFBr','inFH'].forEach(id=>document.getElementById(id).oninput=render);
+render();
+</script>
+<footer style="margin-top:20px;padding-top:10px;border-top:1px solid #1c2028;text-align:center;font-size:.7rem;color:#484f58">
+<a href="impressum.html" style="color:#8b949e;text-decoration:none">Impressum</a>
+</footer>
+</body>
+</html>
